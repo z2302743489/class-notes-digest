@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>课堂纪要拆解 · class-notes-digest</title>
+  <meta name="description" content="把课堂录音稿或群聊记录，整理成可复习的结构化纪要。支持标准纪要与考试复习版。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg2: #121a33;
+      --card: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.1);
+      --text: #e8ecf7;
+      --muted: #9aa6c2;
+      --accent: #6ea8ff;
+      --accent2: #a78bfa;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Noto Sans SC", "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: -1;
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(110,168,255,0.28), transparent 60%),
+        radial-gradient(700px 400px at 90% 10%, rgba(167,139,250,0.22), transparent 55%),
+        radial-gradient(600px 400px at 50% 100%, rgba(52,211,153,0.08), transparent 50%);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { width: min(1080px, 92vw); margin: 0 auto; }
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 0; position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(14px);
+      background: rgba(11,16,32,0.7);
+      border-bottom: 1px solid transparent;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 0.65rem;
+      font-weight: 700; letter-spacing: -0.02em;
+    }
+    .logo-mark {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid; place-items: center; font-size: 0.95rem;
+      box-shadow: 0 8px 24px rgba(110,168,255,0.35);
+    }
+    .nav-links { display: flex; gap: 1.25rem; align-items: center; font-size: 0.95rem; color: var(--muted); }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+      padding: 0.7rem 1.15rem; border-radius: 999px; font-weight: 600; font-size: 0.95rem;
+      border: 1px solid transparent; cursor: pointer; transition: 0.2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6ea8ff, #8b7cff);
+      color: #0b1020; box-shadow: 0 10px 30px rgba(110,168,255,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-1px); text-decoration: none; filter: brightness(1.05); }
+    .btn-ghost {
+      background: transparent; color: var(--text); border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--card); text-decoration: none; }
+
+    .hero { padding: 4.5rem 0 3rem; display: grid; gap: 2.5rem; }
+    @media (min-width: 900px) {
+      .hero { grid-template-columns: 1.1fr 0.9fr; align-items: center; padding-top: 5.5rem; }
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.3rem 0.75rem; border-radius: 999px;
+      background: rgba(110,168,255,0.12); color: var(--accent);
+      font-size: 0.82rem; font-weight: 600; margin-bottom: 1rem;
+      border: 1px solid rgba(110,168,255,0.25);
+    }
+    h1 {
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 1rem;
+    }
+    .hero p.lead { color: var(--muted); font-size: 1.08rem; max-width: 36rem; margin-bottom: 1.75rem; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .meta { color: var(--muted); font-size: 0.88rem; display: flex; flex-wrap: wrap; gap: 0.85rem; }
+    .meta span::before { content: "•"; margin-right: 0.85rem; color: #445; }
+    .meta span:first-child::before { content: none; margin: 0; }
+
+    .preview {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .preview-bar {
+      display: flex; gap: 0.4rem; padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2);
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #445; }
+    .dot:nth-child(1) { background: #ff5f57; }
+    .dot:nth-child(2) { background: #febc2e; }
+    .dot:nth-child(3) { background: #28c840; }
+    .preview-body { padding: 1.1rem 1.2rem 1.3rem; font-size: 0.88rem; }
+    .tag {
+      display: inline-block; padding: 0.15rem 0.5rem; border-radius: 6px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+    }
+    .tag-hi { background: rgba(251,191,36,0.18); color: var(--warn); }
+    .tag-mid { background: rgba(110,168,255,0.18); color: var(--accent); }
+    .preview-body h3 { font-size: 0.95rem; margin: 0.85rem 0 0.4rem; }
+    .preview-body ul { padding-left: 1.1rem; color: var(--muted); }
+    .preview-body li { margin: 0.25rem 0; }
+    .preview-body .hl { color: var(--text); }
+
+    section { padding: 3.25rem 0; }
+    .section-title { font-size: 1.65rem; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .section-sub { color: var(--muted); margin-bottom: 1.75rem; max-width: 40rem; }
+
+    .grid-3 { display: grid; gap: 1rem; }
+    @media (min-width: 760px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.35rem 1.25rem;
+    }
+    .card .icon {
+      width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+      margin-bottom: 0.85rem; background: rgba(110,168,255,0.12); font-size: 1.15rem;
+    }
+    .card h3 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+    .card p { color: var(--muted); font-size: 0.95rem; }
+
+    .steps { display: grid; gap: 1rem; }
+    @media (min-width: 760px) { .steps { grid-template-columns: repeat(4, 1fr); } }
+    .step {
+      position: relative; padding: 1.2rem; border-radius: var(--radius);
+      border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+    }
+    .step-num {
+      font-weight: 700; color: var(--accent); font-size: 0.85rem; margin-bottom: 0.5rem;
+    }
+    .step h3 { font-size: 1rem; margin-bottom: 0.35rem; }
+    .step p { color: var(--muted); font-size: 0.9rem; }
+
+    .modes { display: grid; gap: 1rem; }
+    @media (min-width: 800px) { .modes { grid-template-columns: 1fr 1fr; } }
+    .mode h3 { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .pill {
+      font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px;
+      background: rgba(52,211,153,0.15); color: var(--ok); font-weight: 700;
+    }
+    .pill.alt { background: rgba(167,139,250,0.18); color: #c4b5fd; }
+    .mode ol { padding-left: 1.2rem; color: var(--muted); font-size: 0.95rem; }
+    .mode li { margin: 0.35rem 0; }
+
+    .quote {
+      margin-top: 1.5rem; padding: 1.25rem 1.4rem; border-radius: var(--radius);
+      border-left: 3px solid var(--accent);
+      background: rgba(110,168,255,0.08); color: var(--muted);
+    }
+    .quote strong { color: var(--text); }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem 0 3rem;
+      color: var(--muted); font-size: 0.9rem;
+      display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <div class="logo">
+        <div class="logo-mark">📝</div>
+        <span>课堂纪要拆解</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#how">用法</a>
+        <a href="#modes">双模式</a>
+        <a class="btn btn-primary" href="https://github.com/" id="repoLink" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Agent Skill · 开源作业作品</div>
+        <h1>乱录音、乱群聊，<br />一键变成可复习纪要</h1>
+        <p class="lead">
+          <strong style="color:var(--text)">class-notes-digest</strong>
+          从课堂转写稿或聊天记录里抓关键信息：知识点、老师强调、作业 DDL、待办与自测题。
+          忠于原文，不编造。
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="../SKILL.md">查看 SKILL.md</a>
+          <a class="btn btn-ghost" href="../examples/sample-output.md">看输出样例</a>
+        </div>
+        <div class="meta">
+          <span>标准纪要 + 考试复习版</span>
+          <span>MIT License</span>
+          <span>适配常见 Agent Skill 目录</span>
+        </div>
+      </div>
+
+      <aside class="preview" aria-label="输出预览">
+        <div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="preview-body">
+          <div style="color:var(--muted); margin-bottom:0.35rem;">操作系统 · 第 5 周 · 考试复习版</div>
+          <h3>考试雷达</h3>
+          <ul>
+            <li class="hl">进程 vs 线程 <span class="tag tag-hi">高频</span></li>
+            <li class="hl">地址空间与竞态 <span class="tag tag-mid">中频</span></li>
+            <li>fork 后变量可见性 <span class="tag tag-mid">中频</span></li>
+          </ul>
+          <h3>作业</h3>
+          <ul>
+            <li class="hl">伪代码描述 fork 后父子变量可见性</li>
+            <li>截止：下周五 23:59 · 课程平台</li>
+          </ul>
+          <h3>自测</h3>
+          <ul>
+            <li>为何线程共享地址空间仍各有栈？</li>
+            <li>进程切换为何通常更贵？</li>
+          </ul>
+        </div>
+      </aside>
+    </header>
+
+    <section id="features">
+      <h2 class="section-title">为什么用它</h2>
+      <p class="section-sub">专为「课后整理」和「考前压缩」设计，而不是又一篇空泛摘要。</p>
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon">🎯</div>
+          <h3>抓关键，不灌水</h3>
+          <p>自动忽略约饭表情包，留下知识点、强调点、作业与 DDL。</p>
+        </div>
+        <div class="card">
+          <div class="icon">📚</div>
+          <h3>双模式输出</h3>
+          <p>平时用标准纪要；考前切到考试复习版：必背、对比表、自测卷。</p>
+        </div>
+        <div class="card">
+          <div class="icon">✅</div>
+          <h3>忠于原文</h3>
+          <p>没有的信息写「原文未明确」，禁止幻觉式考点占比或假答案。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <h2 class="section-title">四步上手</h2>
+      <p class="section-sub">把 Skill 装进 Agent 后，粘贴文本即可。</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">STEP 01</div>
+          <h3>安装 Skill</h3>
+          <p>将仓库里的 <code>SKILL.md</code> 放入平台的 skills 目录。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">STEP 02</div>
+          <h3>准备原文</h3>
+          <p>录音先转成文字，或导出课堂群聊记录。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">STEP 03</div>
+          <h3>一句话触发</h3>
+          <p>「整理成课堂纪要」或「考试复习版」+ 粘贴全文。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">STEP 04</div>
+          <h3>拿到纪要</h3>
+          <p>结构化 Markdown：可背、可查、可行动。</p>
+        </div>
+      </div>
+      <div class="quote">
+        <strong>示例口令：</strong>
+        「用课堂纪要拆解，考试复习版。课程：操作系统，第 5 周。」然后粘贴转写稿。
+      </div>
+    </section>
+
+    <section id="modes">
+      <h2 class="section-title">两种输出模式</h2>
+      <p class="section-sub">同一套原则，不同权重——平时记全，考前压薄。</p>
+      <div class="modes">
+        <div class="card mode">
+          <h3>标准纪要 <span class="pill">默认</span></h3>
+          <ol>
+            <li>一句话总结 + 基本信息</li>
+            <li>关键知识点（可带原文锚点）</li>
+            <li>老师强调 / 易错点</li>
+            <li>例题、作业与阅读</li>
+            <li>待办 · 疑问 · 复习提示</li>
+          </ol>
+        </div>
+        <div class="card mode">
+          <h3>考试复习版 <span class="pill alt">考前</span></h3>
+          <ol>
+            <li>考试雷达（高/中/了解）</li>
+            <li>必背清单 + 易混对比表</li>
+            <li>题型提示与作业置顶</li>
+            <li>自测卷（附参考要点）</li>
+            <li>仍存疑点</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">仓库里有什么</h2>
+      <div class="card" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:0.9rem; color:var(--muted); white-space:pre; overflow:auto;">class-notes-digest/
+├── SKILL.md              # 给 Agent 读的完整规则
+├── README.md             # 文档入口
+├── docs/index.html       # 本产品介绍页
+├── examples/             # 样例输入 & 输出
+└── LICENSE               # MIT</div>
+      <div class="hero-cta" style="margin-top:1.5rem;">
+        <a class="btn btn-primary" href="../README.md">读 README</a>
+        <a class="btn btn-ghost" href="../examples/sample-transcript.txt">样例输入</a>
+      </div>
+    </section>
+
+    <footer>
+      <div>课堂纪要拆解 · class-notes-digest · 课程作业作品</div>
+      <div>Built for Agent Skills · MIT</div>
+    </footer>
+  </div>
+  <script>
+    // 推到 GitHub 后，把下面换成你的仓库地址
+    const REPO = "https://github.com/z2302743489/class-notes-digest";
+    const link = document.getElementById("repoLink");
+    if (link) link.href = REPO;
+  </script>
+</body>
+</html>
